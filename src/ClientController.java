@@ -1,13 +1,12 @@
 import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Scanner;
 
 /**
  * Created by Andreas on 2017-04-04.
@@ -33,23 +32,22 @@ public class ClientController {
     private TextField textFieldUserName;
 
     @FXML
-    private Button buttonDisconnect;
+    private Label labelCurrentUser;
 
     @FXML
-    private TextArea textFieldCurrentUserName;
+    private Button buttonDisconnect;
 
     @FXML
     private TextArea textFieldInput;
 
-    @FXML
-    private Button buttonTest;
-
-    private static ChatClient chatClient;
-
-    public static String USERNAME = "Anonymous";
+    public static String USERNAME;
 
     private static int PORT;
     private static String HOST;
+
+    Socket socket;
+    Scanner input;
+    PrintWriter output;
 
     @FXML
     private void initialize() {
@@ -60,7 +58,7 @@ public class ClientController {
                 PORT = Integer.parseInt(textFieldPortNumber.getText());
                 HOST = textFieldHostAdress.getText();
                 USERNAME = textFieldUserName.getText();
-                textFieldCurrentUserName.setText(USERNAME);
+                labelCurrentUser.setText(USERNAME);
                 buttonConnect.setDisable(true);
                 buttonDisconnect.setDisable(false);
                 textFieldInput.setEditable(true);
@@ -77,11 +75,11 @@ public class ClientController {
         // Button Disconnect
         buttonDisconnect.setOnAction(event -> {
             try {
-                chatClient.disconnect();
                 buttonConnect.setDisable(false);
                 buttonDisconnect.setDisable(true);
+                disconnect();
             } catch (Exception exception) {
-                System.out.println("Couldn't disconnect, something went wrong");
+                System.out.println("Couldn't disconnect, something went wrong \n");
             }
         });
 
@@ -89,31 +87,44 @@ public class ClientController {
         textFieldInput.setOnKeyPressed(event -> {
             if(event.getCode() == KeyCode.ENTER) {
                 try {
-                    chatClient.send(textFieldInput.getText());
+                    send(textFieldInput.getText());
                     textFieldInput.clear();
                     textFieldInput.requestFocus();
                 } catch (Exception e) {
-                    textAreaConsole.setText("Failed to send message" + "\n");
+                    textAreaConsole.setText("Failed to send message \n");
                 }
             }
         });
-
-        buttonTest.setOnAction(event -> {
-            setTextAreaConsole("test" +"\n");
-        });
-    }
+    } // End initialize
 
     // Methods
-    public static void connect() {
+    public void connect() {
         try {
             Socket socket = new Socket(HOST, PORT);
-            System.out.println("You connected to: " + HOST);
-            chatClient = new ChatClient(socket);
+            System.out.println("You are connected to: " + HOST + ":" + PORT + "\n");
+            textAreaConsole.appendText("You are connected to: " + HOST + ":" + PORT + "\n");
+
+            Runnable chatClient = () -> {
+                try {
+                    try {
+                        input = new Scanner(socket.getInputStream());
+                        output = new PrintWriter(socket.getOutputStream());
+                        output.flush();
+                        while (true) {
+                            receieve();
+                        }
+                    } finally {
+                        socket.close();
+                    }
+                } catch (Exception exception) {
+                    System.out.print(exception + "Något gick fel med I/O");
+                }
+            };
 
             // Send name to "current online"
-            PrintWriter output = new PrintWriter(socket.getOutputStream());
-            output.println(USERNAME);
-            output.flush();
+            PrintWriter tempOutput = new PrintWriter(socket.getOutputStream());
+            tempOutput.println(USERNAME);
+            tempOutput.flush();
 
             Thread clientThread = new Thread(chatClient);
             clientThread.start();
@@ -122,9 +133,49 @@ public class ClientController {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Information");
             alert.setHeaderText(null);
-            alert.setContentText("Server is not responding");
+            alert.setContentText("Server is not responding, check if server is online!");
             alert.showAndWait();
         }
+    }
+
+    public void receieve() {
+        // Messages from server
+        if(input.hasNext()) {
+            String message = input.nextLine();
+
+            // Current users sent from Server
+            if(message.contains("#USERNAME")) {
+                String temp1 = message.substring(9);
+                temp1 = temp1.replace("[","");
+                temp1 = temp1.replace("]","");
+                String[] currentUsers = temp1.split(", ");
+
+                textAreaConnectedUsers.setText(temp1);
+            } else {
+                System.out.println(message);
+                textAreaConsole.appendText(message +"\n");
+            }
+
+        }
+    }
+
+    public void disconnect() throws IOException {
+        labelCurrentUser.setText("");
+        output.println(ClientController.USERNAME + " has disconnected.");
+        output.flush();
+        socket.close();
+
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Information");
+        alert.setHeaderText(null);
+        alert.setContentText("You have disconnected");
+        alert.showAndWait();
+    }
+
+    public void send(String message) {
+        output.println(ClientController.USERNAME + ": " + message);
+        output.flush();
+        textFieldInput.setText("");
     }
 
     // Getters and setters

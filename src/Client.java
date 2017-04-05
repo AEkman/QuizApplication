@@ -16,7 +16,7 @@ public class Client extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("ClientGui.fxml"));
-        primaryStage.setTitle("Hello World");
+        primaryStage.setTitle("Quiz Application");
         primaryStage.setScene(new Scene(root, 700, 600));
         primaryStage.show();
     }

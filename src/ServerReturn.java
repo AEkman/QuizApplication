@@ -1,7 +1,6 @@
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Created by Andreas on 2017-04-04.
@@ -12,6 +11,7 @@ public class ServerReturn implements Runnable{
     private Scanner input;
     private PrintWriter output;
     String message ="";
+    Random random = new Random();
 
     public ServerReturn(Socket socket) {
         this.socket = socket;
@@ -68,4 +68,7 @@ public class ServerReturn implements Runnable{
             System.out.println(exception);
         }
     }
+
+
+
 }
