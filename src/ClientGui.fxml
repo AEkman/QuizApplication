@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="600.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientController">
+   <children>
+      <BorderPane layoutX="41.0" layoutY="-26.0" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <bottom>
+            <VBox prefWidth="100.0" BorderPane.alignment="CENTER">
+               <children>
+                  <TextArea fx:id="textFieldInput" editable="false" prefHeight="26.0" prefWidth="200.0" promptText="send message..." />
+               </children>
+               <BorderPane.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </BorderPane.margin>
+            </VBox>
+         </bottom>
+         <center>
+            <GridPane hgap="5.0" vgap="5.0" BorderPane.alignment="CENTER">
+              <columnConstraints>
+                <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" maxWidth="527.0" minWidth="10.0" prefWidth="503.0" />
+                <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" maxWidth="345.0" minWidth="10.0" prefWidth="197.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="-Infinity" valignment="CENTER" vgrow="SOMETIMES" />
+                <RowConstraints maxHeight="409.0" minHeight="10.0" prefHeight="409.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+               <children>
+                  <Label text="Console" />
+                  <Label text="Connected Users" GridPane.columnIndex="1" />
+                  <TextArea fx:id="textAreaConsole" prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="1">
+                     <GridPane.margin>
+                        <Insets />
+                     </GridPane.margin>
+                  </TextArea>
+                  <TextArea fx:id="textAreaConnectedUsers" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+               </children>
+               <BorderPane.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </BorderPane.margin>
+            </GridPane>
+         </center>
+         <top>
+            <GridPane hgap="5.0" vgap="5.0" BorderPane.alignment="CENTER">
+              <columnConstraints>
+                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="164.0" minWidth="10.0" prefWidth="79.0" />
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="285.0" minWidth="10.0" prefWidth="146.0" />
+                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="280.0" minWidth="10.0" prefWidth="250.0" />
+                <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" maxWidth="278.0" minWidth="10.0" prefWidth="180.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+               <children>
+                  <TextField fx:id="textFieldHostAdress" promptText="enter adress" text="127.0.0.1" GridPane.columnIndex="1" />
+                  <TextField fx:id="textFieldPortNumber" promptText="enter port" text="5565" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                  <TextField fx:id="textFieldUserName" promptText="enter username" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  <Label text="Host adress:" />
+                  <Label text="Port number:" GridPane.rowIndex="1" />
+                  <Label text="Username" GridPane.rowIndex="2" />
+                  <Button fx:id="buttonConnect" mnemonicParsing="false" text="Connect" GridPane.columnIndex="2" />
+                  <Button fx:id="buttonDisconnect" disable="true" mnemonicParsing="false" text="Disconnect" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                  <TextArea fx:id="textFieldCurrentUserName" editable="false" prefHeight="200.0" prefWidth="200.0" promptText="disconnected" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                  <Label text="Logged in as:" GridPane.columnIndex="3" />
+                  <Button fx:id="buttonTest" mnemonicParsing="false" text="test" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+               </children>
+               <BorderPane.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </BorderPane.margin>
+            </GridPane>
+         </top>
+      </BorderPane>
+   </children>
+</AnchorPane>
