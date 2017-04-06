@@ -8,63 +8,145 @@ import java.util.*;
  */
 public class Server {
 
-    public static ArrayList<Socket> connections = new ArrayList<Socket>();
-    public static ArrayList<String> currentUsers = new ArrayList<String>();
+    private static Map<String, Integer> names = new HashMap<String, Integer>();
+    private static HashSet<PrintWriter> writers = new HashSet<PrintWriter>();
+
     private static Iterator<Map.Entry<String, String>> entryIter;
     private static Map.Entry<String, String> currentEntry;
     private static Map<String, String> qaMap = new HashMap<String, String>();
 
+    private static final int PORT = 5565;
+
+
     public static void main(String[] args) throws IOException {
+        System.out.println("Quiz server started");
+        ServerSocket listener = new ServerSocket(PORT);
 
         try {
-            final int PORT = 5565;
-            ServerSocket server = new ServerSocket(PORT);
-            System.out.println("Server online on port: " + PORT);
-            new sendQuestionThread().start();
-
             while (true) {
-                Socket socket = server.accept();
-                connections.add(socket);
 
-                System.out.println("Client connected from: " + socket.getLocalAddress().getHostName());
+                // Sending out random questions
+                new sendQuestionThread().start();
+                // Engage thread handling
+                new Handler(listener.accept()).start();
+            }
+        } finally {
+            listener.close();
+        }
+    }
 
-                addUser(socket);
+    // Send message method
+    private static void sendMessage(String message) {
+        for(PrintWriter writer: writers) {
+            writer.println(message);
+            writer.flush();
+        }
+    }
 
-                ServerReturn chat = new ServerReturn(socket);
-                Thread serverThread = new Thread(chat);
-                serverThread.start();
+    // Get current online users and send to everyone listening
+    public static void getOnlineUsers() {
+        try {
+            sendMessage("#CLEAR");
+            for(String users:names.keySet()) {
+                sendMessage("#USERNAME" + users + " " + names.get(users));
+            }
+
+        } catch (Exception exception) {
+            System.out.println("getOnline failed");
+        }
+    }
+
+    // Get current online users + score and send to everyone listening
+    public static void getScore() {
+        try {
+            for(String users:names.keySet()) {
+                sendMessage(users + " has " + names.get(users) + " points!");
             }
         } catch (Exception exception) {
-            System.out.println(exception);
+            System.out.println("getScore failed");
         }
     }
 
-    // Add new user and send information too all other users
-    public static void addUser(Socket socket) throws IOException {
-        Scanner input = new Scanner(socket.getInputStream());
-        String userName = input.nextLine();
-        currentUsers.add(userName);
-        System.out.println(currentUsers +"3");
+    // Class for handling threads
+    private static class Handler extends Thread {
+        private String name;
+        private Socket socket;
+        private BufferedReader input;
+        private PrintWriter output;
 
-        // Send out usernames to all users
-        for (int i = 1; i <= Server.connections.size(); i++) {
-            Socket tempSocket = (Socket) Server.connections.get(i-1);
-            PrintWriter output = new PrintWriter(tempSocket.getOutputStream());
-            output.println("#USERNAME" + currentUsers);
-            output.println(userName + " entered");
-            System.out.println(currentUsers);
-            output.flush();
-        }
-    }
 
-    // Method for sending messages
-    public static void sendMessage(String message) throws IOException {
-        for (int i = 1; i <= Server.connections.size(); i++) {
-            Socket tempSocket = (Socket) Server.connections.get(i - 1);
-            PrintWriter tempOutput = new PrintWriter(tempSocket.getOutputStream());
-            tempOutput.println(message); // Question to client
-            tempOutput.flush();
+        public Handler(Socket socket) {
+            this.socket = socket;
         }
+
+        public void run() {
+            try {
+                new sendQuestionThread().start();
+                // Create character streams for the socket.
+                input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                output = new PrintWriter(socket.getOutputStream(), true);
+
+                // Check username
+                while (true) {
+                    name = input.readLine();
+                    if (name == null) {
+                        return;
+                    }
+                    synchronized (names) {
+                        if (!names.containsKey(name)) {
+                            names.put(name, 0);
+                            break;
+                        }
+                    }
+                }
+
+                // Tell everyone who joined
+                output.println(name + " joined");
+                writers.add(output);
+
+                getOnlineUsers();
+
+                // Accept messages from this client and broadcast them.
+                while (true) {
+                    receive();
+                }
+            } catch (IOException e) {
+                System.out.println(e);
+            } finally {
+                // Closing client
+                if (name != null) {
+                    names.remove(name);
+                }
+                if (output != null) {
+                    writers.remove(output);
+                }
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+
+        private void receive() throws IOException {
+            String message = input.readLine();
+            if (message == null) {
+                return;
+            } else if (message != null && message.equalsIgnoreCase(currentEntry.getValue())) {
+                sendMessage(name + " had the correct answer!");
+                names.put(name, names.get(name) + 1);
+                getOnlineUsers();
+            } else if (message.contains("/SCORE")) {
+                getScore();
+                getOnlineUsers();
+            } else if (message.contains("/QUIT")) {
+                getOnlineUsers();
+            }
+
+            for (PrintWriter writer : writers) {
+                writer.println(message);
+            }
+        }
+
     }
 
     // Class for sending questions to users
@@ -90,8 +172,6 @@ public class Server {
                     // Time to answer question
                     Thread.sleep(30000);
 
-                } catch (IOException e) {
-                    e.printStackTrace();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

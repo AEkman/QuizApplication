@@ -1,7 +1,9 @@
 import javafx.beans.property.StringProperty;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -62,6 +64,7 @@ public class ClientController {
                 buttonConnect.setDisable(true);
                 buttonDisconnect.setDisable(false);
                 textFieldInput.setEditable(true);
+                textFieldInput.setDisable(false);
                 connect();
             } else {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -79,20 +82,33 @@ public class ClientController {
                 buttonDisconnect.setDisable(true);
                 disconnect();
             } catch (Exception exception) {
-                System.out.println("Couldn't disconnect, something went wrong \n");
+                textAreaConsole.appendText("Couldn't disconnect, something went wrong \n");
             }
         });
 
-        // TextField Input Chat
-        textFieldInput.setOnKeyPressed(event -> {
-            if(event.getCode() == KeyCode.ENTER) {
-                try {
-                    send(textFieldInput.getText());
-                    textFieldInput.clear();
-                    textFieldInput.requestFocus();
-                } catch (Exception e) {
-                    textAreaConsole.setText("Failed to send message \n");
+        textFieldInput.setOnKeyPressed(keyEvent -> {
+            try {
+                if (keyEvent.getCode() == KeyCode.ENTER) {
+                    if (textFieldInput.getText().equals("/DISCONNECT")) {
+                        disconnect();
+                    } else if (textFieldInput.getText().equals("/QUIT")) {
+                        disconnect();
+                        System.exit(1);
+                    } else if (textFieldInput.getText().equals("/HELP")){
+                        textAreaConsole.appendText("Available commands:\n" +
+                                "/SCORE - print out scores\n" +
+                                "/DISCONNECT - disconnect from server\n" +
+                                "/QUIT - disconnect and quit program\n"
+                        );
+                        buttonDisconnect.setDisable(true);
+                        buttonConnect.setDisable(false);
+                } else {
+                        String text = textFieldInput.getText();
+                        send(text);
+                    }
                 }
+            } catch (Exception exception) {
+                textFieldInput.setText("message not sent! -something went wrong... \n");
             }
         });
     } // End initialize
@@ -101,7 +117,6 @@ public class ClientController {
     public void connect() {
         try {
             Socket socket = new Socket(HOST, PORT);
-            System.out.println("You are connected to: " + HOST + ":" + PORT + "\n");
             textAreaConsole.appendText("You are connected to: " + HOST + ":" + PORT + "\n");
 
             Runnable chatClient = () -> {
@@ -144,26 +159,35 @@ public class ClientController {
             String message = input.nextLine();
 
             // Current users sent from Server
-            if(message.contains("#USERNAME")) {
+            if(message.contains("#CLEAR")) {
+                textAreaConnectedUsers.setText("");
+            } else if (message.contains("#USERNAME")) {
                 String temp1 = message.substring(9);
                 temp1 = temp1.replace("[","");
                 temp1 = temp1.replace("]","");
-                String[] currentUsers = temp1.split(", ");
-
-                textAreaConnectedUsers.setText(temp1);
+                textAreaConnectedUsers.appendText(temp1 + "\n");
+            } else if (message.contains("/SERVERCOMMANDS")) {
+                textAreaConsole.appendText("Available commands:\n" +
+                "/SCORE - print out scores\n" +
+                "/DISCONNECT - disconnect from server\n" +
+                "/QUIT - disconnect and quit program\n"
+                );
             } else {
                 System.out.println(message);
-                textAreaConsole.appendText(message +"\n");
+                textAreaConsole.appendText(message + "\n");
             }
-
         }
     }
 
     public void disconnect() throws IOException {
-        labelCurrentUser.setText("");
-        output.println(ClientController.USERNAME + " has disconnected.");
-        output.flush();
-        socket.close();
+        try {
+            labelCurrentUser.setText("");
+            output.println(ClientController.USERNAME + " has disconnected.");
+            output.flush();
+            socket.close();
+        } catch (Exception exception) {
+            textAreaConsole.setText("Disconnect function failed! \n");
+        }
 
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("Information");
@@ -173,9 +197,13 @@ public class ClientController {
     }
 
     public void send(String message) {
-        output.println(ClientController.USERNAME + ": " + message);
-        output.flush();
-        textFieldInput.setText("");
+        try {
+            output.println(ClientController.USERNAME + ": " + message);
+            output.flush();
+            textFieldInput.clear();
+        } catch (Exception exception) {
+            output.println("message not sent! -something went wrong... \n");
+        }
     }
 
     // Getters and setters
