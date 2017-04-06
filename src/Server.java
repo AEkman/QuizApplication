@@ -3,30 +3,24 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 
-/**
- * Created by Andreas on 2017-04-04.
- */
 public class Server {
 
     private static Map<String, Integer> names = new HashMap<String, Integer>();
     private static HashSet<PrintWriter> writers = new HashSet<PrintWriter>();
-
     private static Iterator<Map.Entry<String, String>> entryIter;
     private static Map.Entry<String, String> currentEntry;
     private static Map<String, String> qaMap = new HashMap<String, String>();
-
     private static final int PORT = 5565;
-
 
     public static void main(String[] args) throws IOException {
         System.out.println("Quiz server started");
+
+        // Sending out random questions
+        new sendQuestionThread().start();
         ServerSocket listener = new ServerSocket(PORT);
 
         try {
             while (true) {
-
-                // Sending out random questions
-                new sendQuestionThread().start();
                 // Engage thread handling
                 new Handler(listener.accept()).start();
             }
@@ -35,7 +29,7 @@ public class Server {
         }
     }
 
-    // Send message method
+    // Send message method loops through sockets and send to everyone that is connected
     private static void sendMessage(String message) {
         for(PrintWriter writer: writers) {
             writer.println(message);
@@ -43,17 +37,23 @@ public class Server {
         }
     }
 
-    // Get current online users and send to everyone listening
+    // Get current online users and send info to all users online
     public static void getOnlineUsers() {
         try {
+            // Clear old list
             sendMessage("#CLEAR");
             for(String users:names.keySet()) {
                 sendMessage("#USERNAME" + users + " " + names.get(users));
             }
-
         } catch (Exception exception) {
-            System.out.println("getOnline failed");
+            System.out.println("getOnlineUsers failed");
         }
+    }
+
+    //todo - get the size of names Map
+    public static int getOnlineUserNumber() {
+        System.out.println(names.size());
+        return names.size();
     }
 
     // Get current online users + score and send to everyone listening
@@ -74,14 +74,12 @@ public class Server {
         private BufferedReader input;
         private PrintWriter output;
 
-
         public Handler(Socket socket) {
             this.socket = socket;
         }
 
         public void run() {
             try {
-                new sendQuestionThread().start();
                 // Create character streams for the socket.
                 input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 output = new PrintWriter(socket.getOutputStream(), true);
@@ -101,19 +99,22 @@ public class Server {
                 }
 
                 // Tell everyone who joined
-                output.println(name + " joined");
+                sendMessage(name + " has joined the server");
+
+                // Add printWriter to list
                 writers.add(output);
 
+                // Update current online users
                 getOnlineUsers();
 
-                // Accept messages from this client and broadcast them.
+                // Accept messages from client and broadcast them.
                 while (true) {
                     receive();
                 }
             } catch (IOException e) {
                 System.out.println(e);
             } finally {
-                // Closing client
+                // Closing client removes name, writer and close socket
                 if (name != null) {
                     names.remove(name);
                 }
@@ -123,17 +124,23 @@ public class Server {
                 try {
                     socket.close();
                 } catch (IOException e) {
+                    System.out.print(e);
                 }
             }
         }
 
+        // Recieve messages from clients
         private void receive() throws IOException {
             String message = input.readLine();
             if (message == null) {
                 return;
             } else if (message != null && message.equalsIgnoreCase(currentEntry.getValue())) {
-                sendMessage(name + " had the correct answer!");
+                // Award player
+                sendMessage(name + " had the correct answer! 1 Point awarded!");
                 names.put(name, names.get(name) + 1);
+                // Unable to get more points
+                currentEntry.setValue("waiting for next question");
+                // Update score
                 getOnlineUsers();
             } else if (message.contains("/SCORE")) {
                 getScore();
@@ -142,24 +149,23 @@ public class Server {
                 getOnlineUsers();
             }
 
+            // Send to all clients
             for (PrintWriter writer : writers) {
                 writer.println(message);
             }
         }
-
     }
 
     // Class for sending questions to users
     public static class sendQuestionThread extends Thread {
         public void run() {
 
-            // Initialize data
+            // Initialize data from textfile to hashmap
             loadQuestions();
 
             // Send questions
             System.out.println("Quiz server active - sending out questions");
             while (true) {
-
                 try {
                     generateQuestion();
 
@@ -167,9 +173,9 @@ public class Server {
                     System.out.print(currentEntry.getKey() + "\n");
 
                     // Send question to clients
-                    sendMessage(currentEntry.getKey() + currentEntry.getValue() + "\n");
+                    sendMessage(currentEntry.getKey() + "\n");
 
-                    // Time to answer question
+                    // Time to answer question "30 seconds"
                     Thread.sleep(30000);
 
                 } catch (InterruptedException e) {
@@ -179,7 +185,7 @@ public class Server {
         }
     }
 
-    // Load questions and answers from textfile "qa.txt
+    // Load questions and answers from textfile "qa.txt"
     private static void loadQuestions() {
         try {
             InputStream is = ClassLoader.getSystemResourceAsStream("qa.txt");
@@ -195,7 +201,7 @@ public class Server {
         }
     }
 
-    // Loading question via iterator and hashmap as Key/Value pair
+    // Loading random question via iterator and hashmap as Key/Value pair
     private static String generateQuestion() {
         if (entryIter == null || !entryIter.hasNext()) {
             entryIter = qaMap.entrySet().iterator();
@@ -203,5 +209,4 @@ public class Server {
         currentEntry = entryIter.next();
         return currentEntry.getKey();
     }
-
 }

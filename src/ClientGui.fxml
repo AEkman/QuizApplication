@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.*?>
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
@@ -32,7 +29,7 @@
               </rowConstraints>
                <children>
                   <Label text="Console" />
-                  <Label text="Connected Users" GridPane.columnIndex="1" />
+                  <Label fx:id="labelConnectedUsers" text="Connected Users" GridPane.columnIndex="1" />
                   <TextArea fx:id="textAreaConsole" prefHeight="200.0" prefWidth="200.0" wrapText="true" GridPane.rowIndex="1">
                      <GridPane.margin>
                         <Insets />
