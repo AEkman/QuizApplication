@@ -1,6 +1,10 @@
+import javafx.event.ActionEvent;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -37,10 +41,10 @@ public class ClientController {
     private Button buttonDisconnect;
 
     @FXML
-    private TextArea textFieldInput;
+    private Label labelConnectedUsers;
 
     @FXML
-    private Label labelConnectedUsers;
+    private TextField textFieldInput;
 
 
     public static String USERNAME;
@@ -52,13 +56,12 @@ public class ClientController {
     Scanner input;
     PrintWriter output;
 
-
     @FXML
     private void initialize() {
 
         // Button Connect Action
         buttonConnect.setOnAction(event -> {
-            if(!textFieldUserName.getText().equals("")) {
+            if (!textFieldUserName.getText().equals("")) {
                 PORT = Integer.parseInt(textFieldPortNumber.getText());
                 HOST = textFieldHostAdress.getText();
                 USERNAME = textFieldUserName.getText();
@@ -68,7 +71,6 @@ public class ClientController {
                 textFieldInput.setEditable(true);
                 textFieldInput.setDisable(false);
                 connect();
-                labelConnectedUsers.setText("Current Users (" + Server.getOnlineUserNumber() +")");
             } else {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
                 alert.setTitle("Information");
@@ -89,17 +91,26 @@ public class ClientController {
             }
         });
 
-        // Textfield sends text when enter key is pressed
-        textFieldInput.setOnKeyPressed(keyEvent -> {
-            try {
-                if (keyEvent.getCode() == KeyCode.ENTER) {
+        // Listen to textfield input, send message with "Enter Key"
+        textFieldInput.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent keyEvent) {
+                if (keyEvent.getCode().equals(KeyCode.ENTER)) {
                     if (textFieldInput.getText().equals("/DISCONNECT")) {
-                        disconnect();
+                        try {
+                            disconnect();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                         textFieldInput.clear();
                     } else if (textFieldInput.getText().equals("/QUIT")) {
-                        disconnect();
+                        try {
+                            disconnect();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                         System.exit(1);
-                    } else if (textFieldInput.getText().equals("/HELP")){
+                    } else if (textFieldInput.getText().equals("/HELP")) {
                         textFieldInput.clear();
                         textAreaConsole.appendText("Available commands:\n" +
                                 "/SCORE - print out scores\n" +
@@ -109,16 +120,16 @@ public class ClientController {
                         );
                         buttonDisconnect.setDisable(true);
                         buttonConnect.setDisable(false);
-                } else {
+                    } else {
                         String text = textFieldInput.getText();
-                        send(text);
+                        output.println(ClientController.USERNAME + ": " + text);
+                        output.flush();
+                        textFieldInput.clear();
                     }
                 }
-            } catch (Exception exception) {
-                textFieldInput.setText("message not sent! -something went wrong... \n");
             }
-        }); // End textFieldInput
-    } // End initialize
+        });
+    }
 
     // Connect to server action
     public void connect() {
@@ -142,6 +153,12 @@ public class ClientController {
                     }
                 } catch (Exception exception) {
                     System.out.print(exception + "Något gick fel med I/O");
+                } finally {
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             };
 
@@ -192,10 +209,10 @@ public class ClientController {
     // Disconnect from server
     public void disconnect() throws IOException {
         try {
-            labelCurrentUser.setText("");
-            output.println(ClientController.USERNAME + " has disconnected.");
+            output.println("/DISCONNECT " + ClientController.USERNAME + " has disconnected.");
             output.flush();
             socket.close();
+            labelCurrentUser.setText("");
         } catch (Exception exception) {
             textAreaConsole.setText("Disconnect function failed! \n");
         }
@@ -215,4 +232,5 @@ public class ClientController {
             output.println("message not sent! -something went wrong... \n");
         }
     }
+
 }

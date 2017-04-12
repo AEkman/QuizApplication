@@ -52,7 +52,6 @@ public class Server {
 
     //todo - get the size of names Map
     public static int getOnlineUserNumber() {
-        System.out.println(names.size());
         return names.size();
     }
 
@@ -134,20 +133,27 @@ public class Server {
             String message = input.readLine();
             if (message == null) {
                 return;
-            } else if (message != null && message.equalsIgnoreCase(currentEntry.getValue())) {
+            } else if (message != null && message.endsWith(currentEntry.getValue().trim().toLowerCase())) {
                 // Award player
                 sendMessage(name + " had the correct answer! 1 Point awarded!");
+                System.out.println("[Server] - " + name + " had the correct answer! 1 Point awarded!");
                 names.put(name, names.get(name) + 1);
                 // Unable to get more points
                 currentEntry.setValue("waiting for next question");
                 // Update score
                 getOnlineUsers();
             } else if (message.contains("/SCORE")) {
+                System.out.println(currentEntry.getValue());
                 getScore();
                 getOnlineUsers();
             } else if (message.contains("/QUIT")) {
+                getScore();
+                getOnlineUsers();
+            } else if (message.contains("/DISCONNECT")) {
+                getScore();
                 getOnlineUsers();
             }
+            System.out.println(message);
 
             // Send to all clients
             for (PrintWriter writer : writers) {
@@ -170,10 +176,10 @@ public class Server {
                     generateQuestion();
 
                     // Print to server
-                    System.out.print(currentEntry.getKey() + "\n");
+                    System.out.print("[Server] - " + currentEntry.getKey() + currentEntry.getValue() + "\n");
 
                     // Send question to clients
-                    sendMessage(currentEntry.getKey() + "\n");
+                    sendMessage("[Quizbot] - " + currentEntry.getKey() + "\n");
 
                     // Time to answer question "30 seconds"
                     Thread.sleep(30000);

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
@@ -9,12 +10,12 @@
       <BorderPane layoutX="41.0" layoutY="-26.0" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <bottom>
             <VBox maxHeight="26.0" prefWidth="100.0" BorderPane.alignment="CENTER">
-               <children>
-                  <TextArea fx:id="textFieldInput" disable="true" editable="false" maxHeight="26" minHeight="26" prefHeight="26" prefWidth="200.0" promptText="send message..." wrapText="true" />
-               </children>
                <BorderPane.margin>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                </BorderPane.margin>
+               <children>
+                  <TextField fx:id="textFieldInput" promptText="enter text..." />
+               </children>
             </VBox>
          </bottom>
          <center>
